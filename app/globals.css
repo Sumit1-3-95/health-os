@@ -1,0 +1,21 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* { -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  overscroll-behavior: none;
+}
+
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+/* Smooth transitions */
+.task-row { transition: background 0.1s; }
+.cb       { transition: all 0.15s; }
+.score-ring circle { transition: stroke-dashoffset 0.5s; }
+
+/* Hide scrollbar on day tabs */
+.day-tabs::-webkit-scrollbar { display: none; }
+.day-tabs { -ms-overflow-style: none; scrollbar-width: none; }
