@@ -23,7 +23,7 @@ import QuickTasks from '@/components/QuickTasks'
 type Checked = Record<string, Record<string, boolean>>
 type Weights = Record<string, number>
 type Scores  = Record<string, number>
-type Page    = 'home' | 'dashboard' | 'diet'
+type Page    = 'home' | 'dashboard' | 'diet' | 'habits'
 
 export default function Home() {
   const today = new Date(); today.setHours(0,0,0,0)
