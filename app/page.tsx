@@ -15,7 +15,7 @@ import DietTab from '@/components/DietTab'
 import TaskEditor, { CustomTask } from '@/components/TaskEditor'
 import WindDownCard from '@/components/WindDownCard'
 import HabitsTab from '@/components/HabitsTab'
-import ActiveHabitsWidget, { } from '@/components/ActiveHabitsWidget'
+import ActiveHabitsWidget from '@/components/ActiveHabitsWidget'
 import { Habit } from '@/components/HabitsTab'
 import ProteinTracker, { MealOption } from '@/components/ProteinTracker'
 import QuickTasks from '@/components/QuickTasks'
@@ -54,18 +54,15 @@ export default function Home() {
   const nextRef = useRef<HTMLDivElement>(null)
   const saveTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
-  // ── Clock ────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const tick = () => setClock(new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true }))
     tick(); const id = setInterval(tick, 30000); return () => clearInterval(id)
   }, [])
 
-  // ── Load history ─────────────────────────────────────────────────────────────
   useEffect(() => {
     const lc = localStorage.getItem('hos-ck'), lw = localStorage.getItem('hos-wt')
     if (lc) setChecked(JSON.parse(lc))
     if (lw) setWeights(JSON.parse(lw))
-
     fetch('/api/daily-log?limit=365')
       .then(r => r.json())
       .then((rows: any[]) => {
@@ -94,7 +91,6 @@ export default function Home() {
       .catch(() => setSyncStatus('error'))
   }, [])
 
-  // ── Selected date ─────────────────────────────────────────────────────────────
   const curWeekMon  = weekStart(today)
   const viewWeekMon = new Date(curWeekMon); viewWeekMon.setDate(curWeekMon.getDate() + weekOffset * 7)
   const selDate     = new Date(viewWeekMon); selDate.setDate(viewWeekMon.getDate() + selDi)
@@ -123,7 +119,6 @@ export default function Home() {
     }
   }, [selDi, weekOffset, syncStatus, page])
 
-  // ── Save ──────────────────────────────────────────────────────────────────────
   const saveToSupabase = useCallback((dateKey: string, ck2: Record<string,boolean>, wt: number | null, date: Date) => {
     const ts   = getTasksForDate(date, checked)
     const ids  = Object.entries(ck2).filter(([, v]) => v).map(([k]) => k)
@@ -143,7 +138,6 @@ export default function Home() {
     }, 1200)
   }, [checked])
 
-  // ── Toggle task ───────────────────────────────────────────────────────────────
   const toggleTask = useCallback((taskId: string) => {
     const was  = !!(checked[selDk] || {})[taskId]
     const next: Checked = { ...checked, [selDk]: { ...(checked[selDk] || {}), [taskId]: !was } }
@@ -161,7 +155,6 @@ export default function Home() {
     }).catch(() => {})
   }, [checked, selDk, selDate, tasks, dtype, weights, saveToSupabase])
 
-  // ── Log weight ────────────────────────────────────────────────────────────────
   const logWeight = useCallback(() => {
     const val = parseFloat(wtInput)
     if (isNaN(val) || val < 30 || val > 250) return
@@ -171,7 +164,6 @@ export default function Home() {
     saveToSupabase(selDk, checked[selDk] || {}, val, selDate)
   }, [wtInput, weights, selDk, selDate, checked, saveToSupabase])
 
-  // ── Score for any date ────────────────────────────────────────────────────────
   function toggleMeal(id: string, meal: MealOption) {
     const next = { ...checkedMeals, [id]: !checkedMeals[id] }
     setCheckedMeals(next)
@@ -199,7 +191,6 @@ export default function Home() {
       setCustomTasks(next)
       localStorage.setItem('hos-custom-tasks', JSON.stringify(next))
     } else {
-      // Mark as today-only deleted by removing from today
       const next = customTasks.map(t => t.id === taskId ? { ...t, days: `skip:${selDk}` } : t)
       setCustomTasks(next)
       localStorage.setItem('hos-custom-tasks', JSON.stringify(next))
@@ -224,7 +215,6 @@ export default function Home() {
   const daysInMonth  = new Date(mY, mM + 1, 0).getDate()
   const monthStartDi = (() => { const d = new Date(mY, mM, 1).getDay(); return d === 0 ? 6 : d - 1 })()
 
-  // ── ScoreCard analytics ───────────────────────────────────────────────────────
   const weekDays = Array.from({ length: 7 }, (_, i) => { const d = new Date(viewWeekMon); d.setDate(viewWeekMon.getDate() + i); return d })
   const weekScores = weekDays.map(d => scoreForDate(d)).filter(s => s > 0)
   const weekAvg = weekScores.length ? Math.round(weekScores.reduce((a,b)=>a+b,0)/weekScores.length) : 0
@@ -236,24 +226,15 @@ export default function Home() {
   const bestDayScore = Math.max(...weekScores, 0)
   const bestDay      = bestDayScore > 0 ? DAYS[weekDays.findIndex(d => scoreForDate(d) === bestDayScore)] : '—'
 
-  // ── NAV TABS ─────────────────────────────────────────────────────────────────
   const navTabs: { id: Page; label: string; icon: React.ReactNode }[] = [
-    {
-      id: 'home', label: 'Home',
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-    },
-    {
-      id: 'dashboard', label: 'Stats',
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    },
-    {
-      id: 'habits', label: 'Habits',
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-    },
-    {
-      id: 'diet', label: 'Diet',
-      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>
-    },
+    { id: 'home', label: 'Home',
+      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
+    { id: 'dashboard', label: 'Stats',
+      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
+    { id: 'habits', label: 'Habits',
+      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> },
+    { id: 'diet', label: 'Diet',
+      icon: <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg> },
   ]
 
   return (
@@ -265,10 +246,8 @@ export default function Home() {
 
       <main className="max-w-lg mx-auto px-4">
 
-        {/* ── HOME TAB ── */}
         {page === 'home' && (
           <>
-            {/* View toggle + week nav */}
             <div className="flex gap-2 mt-4 items-center">
               {(['week','month'] as const).map(v => (
                 <button key={v} onClick={() => setView(v)} className="px-4 py-1 rounded-full text-xs font-semibold transition-all"
@@ -294,7 +273,6 @@ export default function Home() {
 
             {view === 'week' ? (
               <>
-                {/* Day tabs */}
                 <div className="flex gap-1 mt-3 overflow-x-auto pb-1" style={{ scrollbarWidth:'none' }}>
                   {DAYS.map((d, i) => {
                     const date = new Date(viewWeekMon); date.setDate(viewWeekMon.getDate() + i)
@@ -312,7 +290,6 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* Score card */}
                 <ScoreCard
                   score={score} earned={earnedPts} total={totalPts}
                   done={tasks.filter(t=>ckDay[t.id]).length} taskCount={tasks.length}
@@ -324,17 +301,14 @@ export default function Home() {
                   workoutDone={workoutDone} leftOnTime={leftOnTime}
                 />
 
-                {/* Active Habits Widget */}
                 <ActiveHabitsWidget
                   habits={activeHabits}
                   accent={pal.a}
                   onNavigate={() => setPage('habits')}
                 />
 
-                {/* Past pills */}
                 {pastGroups.length > 0 && <PastPills groups={pastGroups} ckDay={ckDay} accent={pal.a} onToggle={toggleTask}/>}
 
-                {/* Next up banner */}
                 {nextGroup && (
                   <div className="rounded-xl px-4 py-3 flex items-center gap-3 my-3 border" style={{ background: pal.s+'99', borderColor: pal.a+'40' }}>
                     <span className="text-2xl">{nextGroup.icon}</span>
@@ -348,7 +322,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* Task groups */}
                 <div className="mt-3 flex items-center justify-between mb-1">
                   <div className="text-xs text-gray-400 font-medium">Tasks</div>
                   <button onClick={() => { setEditingTask(null); setShowEditor(true) }}
@@ -389,14 +362,12 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Protein Tracker */}
                 <ProteinTracker
                   accent={pal.a}
                   checkedMeals={checkedMeals}
                   onToggleMeal={toggleMeal}
                 />
 
-                {/* Quick Tasks / Laundry List */}
                 <QuickTasks
                   todayDk={todayDk}
                   selDk={selDk}
@@ -405,7 +376,6 @@ export default function Home() {
                 />
               </>
             ) : (
-              /* Month grid */
               <div className="mt-3 bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
                 <div className="text-center text-sm font-semibold mb-3">{MONTH_FULL[mM]} {mY}</div>
                 <div className="grid grid-cols-7 gap-1 mb-1">
@@ -438,23 +408,14 @@ export default function Home() {
           </>
         )}
 
-        {/* ── DASHBOARD TAB ── */}
         {page === 'dashboard' && <DashboardTab accent={pal.a}/>}
-
-        {/* ── DIET TAB ── */}
         {page === 'diet' && <DietTab/>}
-
-        {/* ── HABITS TAB ── */}
         {page === 'habits' && (
-          <HabitsTab
-            accent={pal.a}
-            onActiveHabits={setActiveHabits}
-          />
+          <HabitsTab accent={pal.a} onActiveHabits={setActiveHabits}/>
         )}
 
       </main>
 
-      {/* ── BOTTOM NAV ── */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 flex z-50" style={{ paddingBottom: 'env(safe-area-inset-bottom,0px)' }}>
         {navTabs.map(tab => (
           <button key={tab.id} onClick={() => setPage(tab.id)}
@@ -466,7 +427,6 @@ export default function Home() {
         ))}
       </div>
 
-      {/* Task Editor Modal */}
       {showEditor && (
         <TaskEditor
           editingTask={editingTask}
